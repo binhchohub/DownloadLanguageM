@@ -8,10 +8,12 @@ import android.net.Uri;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.SparseBooleanArray;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,8 +25,6 @@ public class MainActivity extends AppCompatActivity {
 
     private ListView listview;
     private Button button;
-    private int check;
-    private Languages lcheck;
 
 
     @Override
@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
         listview = (ListView)findViewById(R.id.list);
         button = (Button)findViewById(R.id.button);
 
-        listview.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+        listview.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 
 
 
@@ -84,14 +84,16 @@ public class MainActivity extends AppCompatActivity {
 
         ArrayAdapter<Languages> arrayAdapter = new ArrayAdapter<Languages>(this, android.R.layout.simple_list_item_multiple_choice , languageList);
         listview.setAdapter(arrayAdapter);
-        listview.setItemChecked(0, true);
+
+        for(int i=0; i<languageList.size(); i++){
+            listview.setItemChecked(i,false);
+        }
+
 
         button.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view) {
-                check = listview.getCheckedItemPosition();
-                lcheck = (Languages) listview.getItemAtPosition(check);
 
                 DialogInterface.OnClickListener dialogOnClickListener = new DialogInterface.OnClickListener() {
                     @Override
@@ -106,25 +108,36 @@ public class MainActivity extends AppCompatActivity {
                                     direct.mkdirs();
                                 }
 
-                                DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-                                Uri uri = Uri.parse(lcheck.getFileurl());
-                                DownloadManager.Request request = new DownloadManager.Request(uri);
-                                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                                request.setDestinationInExternalPublicDir("tessdata", lcheck.getFilename());
-                                downloadManager.enqueue(request);
+                                SparseBooleanArray sp = listview.getCheckedItemPositions();
 
+                                for(int j=0;j<sp.size();j++){
+                                    if(sp.valueAt(j)==true){
+                                        Languages lang = (Languages) listview.getItemAtPosition(j);
+                                        DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                                        Uri uri = Uri.parse(lang.getFileurl());
+                                        DownloadManager.Request request = new DownloadManager.Request(uri);
+                                        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                                        request.setDestinationInExternalPublicDir("tessdata", lang.getFilename());
+                                        downloadManager.enqueue(request);
+                                    }
+                                }
                                 break;
 
                             case DialogInterface.BUTTON_NEGATIVE:
                                 //No button clicked
+
                                 break;
                         }
                     }
                 };
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setMessage("Ngôn ngữ: " + lcheck.getName()+"\nTên File: "+lcheck.getFilename()+"\nXác nhận tải?").setPositiveButton("Tải xuống", dialogOnClickListener)
-                        .setNegativeButton("Hủy", dialogOnClickListener).show();
+                SparseBooleanArray sp = listview.getCheckedItemPositions();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                        builder.setMessage("Xác nhận tải?").setPositiveButton("Tải xuống", dialogOnClickListener)
+                                .setNegativeButton("Hủy", dialogOnClickListener).show();
+
+
+
 
 
 
